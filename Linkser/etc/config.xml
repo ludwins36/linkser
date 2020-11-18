@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <payment>
+            <linkser_creditcard>
+                <title>linkser Credit Card</title>
+                <active>1</active>
+                <description>linkser Credit Card</description>
+                <payment_action>initialize</payment_action>
+                <payment_expire>1</payment_expire>
+                <version>9.9</version>
+                <model>LinkserGateway</model>
+                <cctypes>AE,VI,MC,DI,JCB,DN</cctypes>
+                <ccfields>x_card_code,x_exp_date,x_card_num</ccfields>
+                <payment_url>https://demo2.linkser.com/linkserFrontEnd/SecurePayment/PaymentAuth.aspx</payment_url>
+                <test_payment_url>https://demo2.linkser.com/linkserFrontEnd/SecurePayment/PaymentAuth.aspx</test_payment_url>
+                <allowspecific>0</allowspecific>
+                <testmode>1</testmode>
+                <use_card_name>1</use_card_name>
+                <useccv>1</useccv>
+                <can_initialize>1</can_initialize>
+                <can_capture>1</can_capture>
+                <can_cancel>1</can_cancel>
+                <can_refund>1</can_refund>
+                <can_use_checkout>1</can_use_checkout>
+                <can_use_internal>0</can_use_internal>
+                <sort_order>10</sort_order>
+                <currency_no>840</currency_no>
+                <currency>USD</currency>
+            </linkser_creditcard>
+        </payment>
+    </default>
+</config>

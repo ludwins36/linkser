@@ -1,0 +1,88 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <virtualType name="VexsolucionesLinkserConfig" type="Magento\Payment\Gateway\Config\Config">
+        <arguments>
+            <argument name="methodCode" xsi:type="string">linkser_creditcard</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="VexsolucionesLinkserConfigValueHandler" type="Magento\Payment\Gateway\Config\ConfigValueHandler">
+        <arguments>
+            <argument name="configInterface" xsi:type="object">VexsolucionesLinkserConfig</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="VexsolucionesLinkserValueHandlerPool" type="Magento\Payment\Gateway\Config\ValueHandlerPool">
+        <arguments>
+            <argument name="handlers" xsi:type="array">
+                <item name="default" xsi:type="string">VexsolucionesLinkserConfigValueHandler</item>
+            </argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="VexsolucionesLinkserCountryValidator" type="Magento\Payment\Gateway\Validator\CountryValidator">
+        <arguments>
+            <argument name="config" xsi:type="object">VexsolucionesLinkserConfig</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="VexsolucionesLinkserValidatorPool" type="Magento\Payment\Gateway\Validator\ValidatorPool">
+        <arguments>
+            <argument name="validators" xsi:type="array">
+                <item name="country" xsi:type="string">VexsolucionesLinkserCountryValidator</item>
+            </argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="VexsolucionesLinkserLoggerHandler" type="Magento\Framework\Logger\Handler\Base">
+        <arguments>
+            <argument name="fileName" xsi:type="string">var/log/linkser_creditcard.log</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="VexsolucionesLinkserLogger" type="Monolog\Logger">
+        <arguments>
+            <argument name="name" xsi:type="string">VexsolucionesLinkserLogger</argument>
+            <argument name="handlers" xsi:type="array">
+                <item name="system" xsi:type="object">VexsolucionesLinkserLoggerHandler</item>
+            </argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="VexsolucionesLinkserHandler" type="Magento\Payment\Gateway\Response\HandlerChain">
+        <arguments>
+            <argument name="handlers" xsi:type="array">
+                <item name="captureTransaction" xsi:type="string">Vexsoluciones\Linkser\Gateway\Response\Handler\Capture\CaptureTransaction</item>
+                <item name="orderStatus" xsi:type="string">Vexsoluciones\Linkser\Gateway\Response\Handler\Capture\OrderStatus</item>
+            </argument>
+        </arguments>
+    </virtualType>
+    <type name="Vexsoluciones\Linkser\Gateway\Commands\CaptureCommand">
+        <arguments>
+            <argument name="validator" xsi:type="object">Vexsoluciones\Linkser\Gateway\Validator\ResponseValidator</argument>
+            <argument name="logger" xsi:type="object">VexsolucionesLinkserLogger</argument>
+            <argument name="handler" xsi:type="object">VexsolucionesLinkserHandler</argument>
+        </arguments>
+    </type>
+    <virtualType name="VexsolucionesLinkserCommandPool" type="Magento\Payment\Gateway\Command\CommandPool">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="initialize" xsi:type="string">Vexsoluciones\Linkser\Gateway\Commands\InitializeCommand</item>
+                <item name="capture" xsi:type="string">Vexsoluciones\Linkser\Gateway\Commands\CaptureCommand</item>
+            </argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="LinkserGateway" type="Magento\Payment\Model\Method\Adapter">
+        <arguments>
+            <argument name="code" xsi:type="string">linkser_creditcard</argument>
+            <argument name="formBlockType" xsi:type="string">Magento\Payment\Block\Transparent\Info</argument>
+            <argument name="infoBlockType" xsi:type="string">Magento\Payment\Block\Info</argument>
+            <argument name="valueHandlerPool" xsi:type="object">VexsolucionesLinkserValueHandlerPool</argument>
+            <argument name="validatorPool" xsi:type="object">VexsolucionesLinkserValidatorPool</argument>
+            <argument name="commandPool" xsi:type="object">VexsolucionesLinkserCommandPool</argument>
+        </arguments>
+    </virtualType>
+    <type name="Vexsoluciones\Linkser\Controller\Process\Response">
+        <arguments>
+            <argument name="logger" xsi:type="object">VexsolucionesLinkserLogger</argument>
+        </arguments>
+    </type>
+    <type name="Vexsoluciones\Linkser\Gateway\Response\Handler\Request\Transaction">
+        <arguments>
+            <argument name="logger" xsi:type="object">VexsolucionesLinkserLogger</argument>
+        </arguments>
+    </type>
+</config>

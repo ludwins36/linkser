@@ -1,0 +1,25 @@
+{
+    "name": "vexsoluciones/linkser-credit-card",
+    "description": "Vexsolucioness linkser Payment Gateway module",
+    "authors": [{
+        "name": "Vexsolucioness.com",
+        "email": "support@vexsoluciones.com"
+    }],
+    "type": "magento2-module",
+    "require": {
+        "php": "~7.1.3|~7.2.0"
+    },
+    "license": [
+        "OSL-3.0",
+        "AFL-3.0"
+    ],
+    "version": "1.0.0",
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Vexsoluciones\\Linkser\\": ""
+        }
+    }
+}
