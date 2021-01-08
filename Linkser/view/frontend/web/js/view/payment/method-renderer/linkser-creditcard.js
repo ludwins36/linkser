@@ -8,11 +8,6 @@ define([
     ],
     function($, quote, Component, alert, fullScreenLoader) {
         'use strict';
-
-
-
-
-
         var city, telephone, postcode, base_currency, street, countryid, ids, totalshp;
 
         return Component.extend({
@@ -88,7 +83,7 @@ define([
                     cc_month: $("#linkser_creditcard_expiration :selected").val(),
                     cc_year: $("#linkser_creditcard_expiration_yr :selected").val(),
                     cc_vv: document.getElementById("linkser_creditcard_cc_cid").value,
-                    cc_bin: document.getElementById("linkser_creditcard_cc_number").value.substring(0, 8),
+                    cc_bin: document.getElementById("linkser_creditcard_cc_number").value.substring(0, 6),
                     idorder: ids,
                     totalsp: totalshp
 
@@ -119,9 +114,6 @@ define([
                             if (data.code == '0') {
                                 window.location.href = window.checkoutConfig.defaultSuccessPageUrl;
                                 // window.location.href = Url_credomatic;
-
-
-
                                 // window.location.href = window.checkoutConfig.defaultSuccessPageUrl;
                                 // document.getElementById("f_form").innerHTML = data.htmlRedirect;
 
@@ -131,9 +123,16 @@ define([
                                 // console.log(data);
                                 $('body').trigger('processStop');
                                 alert({
-                                    content: $.mage.__('No se ha podido completar la transacción, inténtelo más tarde.')
+                                    title: $.mage.__('Error Linkser'),
+                                    content: $.mage.__(data.message),
+                                    actions: {
+                                        always: function() {
+                                            window.location.href = Url_credomatic;
+                                        }
+                                    }
                                 });
-                                window.location.href = Url_credomatic;
+                                // setTimeout(function() { window.location.href = Url_credomatic; }, 2000);
+
                             }
 
 

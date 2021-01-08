@@ -8,6 +8,7 @@ namespace Vexsoluciones\Linkser\Controller\Payment;
 use Magento\Payment\Helper\Data as PaymentHelper;
 use Magento\Sales\Model\Order\Payment\Transaction;
 use Magento\Sales\Model\Order;
+use Vexsoluciones\Linkser\Controller\Payment\Bins;
 use Vexsoluciones\Linkser\Controller\Payment\Soap;
 
 
@@ -81,15 +82,14 @@ class Validate extends \Magento\Framework\App\Action\Action
         $total = $data['totalsp'];
         $result = $this->resultJsonFactory->create();
 
-
-        $dataBin = json_decode($this->get_bin_card($data['cc_bin']));
+        $bin  = new Bins();
         $quota = $this->_checkoutSession->getQuote();
         if(isset($dataBin->country->name)){
             $binCountry = (string)$dataBin->country->name;
         }
         
-        $currency = 'USD';
-		$currency_system = $this->_storeManager->getStore()->getBaseCurrencyCode();  // OBTENER SIGLAS DE LA MONEDA CONFIGURADA EN LA TIENDA
+		// $currency_system = $this->_storeManager->getStore()->getBaseCurrencyCode();  // OBTENER SIGLAS DE LA MONEDA CONFIGURADA EN LA TIENDA
+		$currency_system = 'BOB';  // OBTENER SIGLAS DE LA MONEDA CONFIGURADA EN LA TIENDA
 		$numeric_code_currency = array(
 		    'USD' => '840', //	Dolar estadounidense
 		    'BOB' => '068' //	BOLIVIANO
@@ -108,7 +108,7 @@ class Validate extends \Magento\Framework\App\Action\Action
         $customer = $this->customerSession->getCustomer();
 
         
-        if(strpos($binCountry, $country) === false){
+        if(!$bin->validate_bin_linkser($data['cc_bin'])){
             $fingerprint = strtotime('now');
 
             $request = new \stdClass();
@@ -153,7 +153,7 @@ class Validate extends \Magento\Framework\App\Action\Action
 			$billTo->city = $address->getData('city');
 			$billTo->state = $address->getData('region');
             
-			$billTo->postalCode =  $address->getData('postcode');
+			$billTo->postalCode =  '0000';
 			$billTo->country = 'BOL';
 			$billTo->email = $customer->getEmail();
 			$billTo->ipAddress = $_SERVER['REMOTE_ADDR'];
@@ -167,53 +167,28 @@ class Validate extends \Magento\Framework\App\Action\Action
             $request->card = $card;
 
             $purchaseTotals = new \stdClass();
-			$purchaseTotals->currency = strtoupper($currency);
+			$purchaseTotals->currency = strtoupper($currency_system);
 			$purchaseTotals->grandTotalAmount = $total;
             $request->purchaseTotals = $purchaseTotals;
-                
-
-            
             $SoapClient = new Soap($wsdl, array());
-            $reply = $SoapClient->runTransaction($request);
-            
-            
-
-            if ($reply->reasonCode == 100 or $reply->reasonCode == 480) {
-                unset($request->ccAuthService);
-               
-                $capture = 0;
-                
-                $message = 'Authed success, request ID: ' . $reply->requestID;
-            
-                $request->offer0 = $purchaseTotals;					
-                $ccCaptureService = new \stdClass();
-                $ccCaptureService->run = "true";
-                $ccCaptureService->authRequestID = $reply->requestID;
-                $request->ccCaptureService = $ccCaptureService;
-               
-                //$request->deviceFingerprintHash = $reply->afsReply->deviceFingerprint->hash;
-                
-                $capture_reply = $SoapClient->runTransaction($request);
-                // $tum = array("data" => $capture_reply->reasonCode, 'resques' => $request);
-                // return $result->setData($tum); 
-                if ($capture_reply->reasonCode == 100) {
-                    // $message = 'Fondos capturados con éxito, reconciliation ID: ' . $capture_reply->ccCaptureReply->reconciliationID;
-                    $Orstatus = $this->getConfigData('order_status_aceptado');
-			        $this->UpdateStatus($order_id, $Orstatus);
-                    $tum = array("code" => 0);
-                }else{
-                    $Orstatus = $this->getConfigData('order_status_cancelado');
-                    $this->UpdateStatus($order_id, $Orstatus);
-                    $tum = array("code" => 1);
-                }
-               
-
+        
+            $request->offer0 = $purchaseTotals;					
+            $ccCaptureService = new \stdClass();
+            $ccCaptureService->run = "true";
+            $request->ccCaptureService = $ccCaptureService;
+            $capture_reply = $SoapClient->runTransaction($request);
+            if ($capture_reply->reasonCode == 100) {
+                $Orstatus = $this->getConfigData('order_status_aceptado');
+			    $this->UpdateStatus($order_id, $Orstatus);
+                $tum = array("code" => 0);
             }else{
                 $Orstatus = $this->getConfigData('order_status_cancelado');
                 $this->UpdateStatus($order_id, $Orstatus);
-                $tum = array("code" => 1);
-
+                $tum = array("code" => 1, "message" => "Error al procesar el pago.");
             }
+               
+
+            
 
             
             return $result->setData($tum); 
@@ -226,6 +201,7 @@ class Validate extends \Magento\Framework\App\Action\Action
             } else{
                 $currency = '840';
             }
+
             $_directoryList = $objectManager->get('\Magento\Framework\Filesystem\DirectoryList');
             $dirJAva = $_directoryList->getPath('app') . '/code/Vexsoluciones/Linkser/Java/Criptografia.jar';
             $dirKeyLinkser = $_directoryList->getPath('media') . '/keys_linkser/public_linkser/publica.rsa';
@@ -239,6 +215,7 @@ class Validate extends \Magento\Framework\App\Action\Action
 
             $codInstitucionEncriptadoStr = $this->encriptarData($dirJAva, $dirKeyLinkser, $code);
             $llavePublicaStr = shell_exec("java -jar {$dirJAva} Pu {$dirKeyPublic}  2>&1");
+
             $llaveRegisroEncriptadoStr = $this->encriptarData($dirJAva, $dirKeyLinkser, $key);
             $SoapResult = $this->soapClientFactory->create($url);
             $reto = $SoapResult->getReto(array());
@@ -250,6 +227,11 @@ class Validate extends \Magento\Framework\App\Action\Action
                 'llave_registro'=> $llaveRegisroEncriptadoStr
                 )
             );
+           
+            if($setKey instanceof SoapFault){
+                $tum = array("code" => '1', "message" => "Error del Sistema.");
+                return $result->setData($tum); 
+            }
 
             $numeroTarjetaEncriptadoStr = $this->encriptarData($dirJAva, $dirKeyLinkser, $data['cc_card']);
             $cvv2EncriptadoStr = $this->encriptarData($dirJAva, $dirKeyLinkser, $data['cc_vv']);
@@ -258,42 +240,23 @@ class Validate extends \Magento\Framework\App\Action\Action
             $amount_format = str_pad($punto, 13, "0", STR_PAD_LEFT);
             $amount = str_replace ( ".", "", $amount_format);
 
-            // $tum = array(
-            //     "java" => $dirJAva,
-            //     "dirKeyLinkser" => $dirKeyLinkser,
-            //     "dirKeyPublic" => $dirKeyPublic,
-            //     "dirKeyPrivate" => $dirKeyPrivate,
-            //     "codeSS" => $code,
-            //     "secret" => $secret,
-            //     "termial" => $termial,
-            //     "key" => $key,
-            //     "codInstitucionEncriptadoStr" => $codInstitucionEncriptadoStr,
-            //     "llavePublicaStr" => $llavePublicaStr,
-            //     "llaveRegisroEncriptadoStr" => $llaveRegisroEncriptadoStr,
-            //     "reto" => $reto,
-            //     "setKey" => $setKey,
-            //     "cvv2EncriptadoStr" => $cvv2EncriptadoStr,
-            //     "numeroTarjetaEncriptadoStr" => $numeroTarjetaEncriptadoStr,
-            //     "amount" => $amount,
-            // );
+           
             $dataExpiry = trim($data['cc_year']) . trim(strlen($data['cc_month']) == 1? '0'.$data['cc_month'] : $data['cc_month']);
             $fechaExpiraEncriptadoStr = $this->encriptarData($dirJAva, $dirKeyLinkser, $dataExpiry);
 
             $order_id = str_pad($order_id, 6, "0", STR_PAD_LEFT);
            
-            // if($setKey instanceof SoapFault){
-            //     $tum = array("code" => '1');
-            //     return $result->setData($tum); 
-            // }
+            
 
            
-
-            
-
+            $secuencia = substr($order_id, 0, 6);
+            $fecha = date('Ymd');
+            $hora = date('His');
+            $validation = $this->getValidateFirma($dirJAva, $dirKeyPrivate, $code, $reto->return);
             
             $params = array(
-                'cod_institucion'=> $code, 
-                'secuencia'=> substr($order_id, 0, 6),
+                'cod_institucion'=> $codInstitucionEncriptadoStr, 
+                'secuencia'=> $secuencia,
                 'cod_comercio'=> $secret, 
                 'cod_terminal'=>$termial, 
                 'tarjeta'=> $numeroTarjetaEncriptadoStr, 
@@ -302,31 +265,57 @@ class Validate extends \Magento\Framework\App\Action\Action
                 'cvv2'=> $cvv2EncriptadoStr, 
                 'monto'=> $amount, 
                 'moneda'=> $currency, 
-                'fecha_envio'=> date('Ymd'), 
-                'hora_envio'=> date('His'), 
+                'fecha_envio'=> $fecha, 
+                'hora_envio'=> $hora, 
                 'reto'=> $reto->return, 
-                'validacionDigital'=> $this->getValidateFirma($dirJAva, $dirKeyPrivate, $code, $reto->return), 
+                'validacionDigital'=> $validation, 
                 'llave_registro'=> $llaveRegisroEncriptadoStr
             );
-            
+            // $tum = array("code" => 1, "message" => json_encode($params));
+            // return $result->setData($tum); 
             $payme = $SoapResult->me_set_Autho_Ecomm($params);
             // return $result->setData($params);
             if($payme instanceof SoapFault){
-                $tum = array("code" => '1');
+                $tum = array("code" => 1, "message" => "Error de sistema.");
                 return $result->setData($tum); 
 
             }
-            if($payme->return[0] == 0){
+
+
+            if(count($payme->return) < 6){
+                $Orstatus = $this->getConfigData('order_status_cancelado');
+                $this->UpdateStatus($order_id, $Orstatus);
+                $dat = array("code" => 1, "message" => $payme->return[1]);
+                // return $result->setData($dat); 
+            } else if($payme->return[2] == 0){
                 // Success operation
                 $Orstatus = $this->getConfigData('order_status_aceptado');
                 $this->UpdateStatus($order_id, $Orstatus);
                 $dat = array("code" => 0);
-
                
-            }else{
+            }else if($payme->return[2] == 8 || $payme->return[2] == 91 || $payme->return[2] == 92){
+                $params = array(
+                    'cod_institucion'=> $code, 
+                    'secuencia'=> $secuencia, 
+                    'fecha_transaccion'=>$fecha, 
+                    'fecha_envio'=>$fecha, 
+                    'hora_envio'=>$hora, 
+                    'reto'=> $codReto->return, 
+                    'validacionDigital'=>$validation, 
+                    'llave_registro'=>$llaveRegisroEncriptadoStr
+                ); 
+
+                $SoapResult->me_set_Rever_Ecomm($params);
                 $Orstatus = $this->getConfigData('order_status_cancelado');
                 $this->UpdateStatus($order_id, $Orstatus);
-                $dat = array("code" => 1);
+                $dat = array("code" => 1, "message" => $payme->return[1]);
+
+
+            }
+            else{
+                $Orstatus = $this->getConfigData('order_status_cancelado');
+                $this->UpdateStatus($order_id, $Orstatus);
+                $dat = array("code" => 1, "message" => $payme->return[3]);
                 
             }
 

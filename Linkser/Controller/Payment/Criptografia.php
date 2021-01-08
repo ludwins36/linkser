@@ -8,10 +8,12 @@ namespace Vexsoluciones\Linkser\Controller\Payment;
 use Magento\Payment\Helper\Data as PaymentHelper;
 use Magento\Sales\Model\Order\Payment\Transaction;
 use Vexsoluciones\Linkser\Controller\Payment\Soap;
+use Vexsoluciones\Linkser\Controller\Payment\Bins;
 class Criptografia extends \Magento\Framework\App\Action\Action
 {
     public $javaDir;
     public $file;
+    // public $binList;
     protected $_productRepository;
 
 
@@ -28,6 +30,9 @@ class Criptografia extends \Magento\Framework\App\Action\Action
     }
     public function execute() 
     {
+        $bin  = new Bins();
+        var_dump($bin->validate_bin_linkser('402559'));
+        exit('hola');
         $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
         $soap = $objectManager->get('\Magento\Framework\Webapi\Soap\ClientFactory');
         $rest = $soap->create('https://lnksrvssaup2.linkser.com.bo:9483/wsComercioEcomme/ServiciosEcommeLNK?wsdl');
@@ -52,13 +57,13 @@ class Criptografia extends \Magento\Framework\App\Action\Action
             'llave_registro'=> $key3
             )
         );
-        $numeroTarjetaEncriptadoStr = shell_exec("java -jar {$dir} E {$key2} 4111111111111111  2>&1");
-        $fechaExpiraEncriptadoStr = shell_exec("java -jar {$dir} E {$key2} 202012  2>&1");
-        $cvv2EncriptadoStr = shell_exec("java -jar {$dir} E {$key2} 123  2>&1");
+        $numeroTarjetaEncriptadoStr = shell_exec("java -jar {$dir} E {$key2} 4560160018692018  2>&1");
+        $fechaExpiraEncriptadoStr = shell_exec("java -jar {$dir} E {$key2} 202201  2>&1");
+        $cvv2EncriptadoStr = shell_exec("java -jar {$dir} E {$key2} 540  2>&1");
         $reto = $rest->getReto(array());
         $params = array(
             'cod_institucion'=>  $code, 
-            'secuencia'=> '000374',
+            'secuencia'=> '000380',
             'cod_comercio'=> "0375136", 
             'cod_terminal'=>"02179999", 
             'tarjeta'=> $numeroTarjetaEncriptadoStr, 

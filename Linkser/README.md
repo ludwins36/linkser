@@ -26,7 +26,6 @@ Installation
 ### Changelog ###
     * 1.0.0: Initial module
     
-### Support & Contact ###
-Skype: [tatdat.2610](skype:tatdat.2610)
+
 
 
