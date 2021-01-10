@@ -88,8 +88,8 @@ class Validate extends \Magento\Framework\App\Action\Action
             $binCountry = (string)$dataBin->country->name;
         }
         
-		// $currency_system = $this->_storeManager->getStore()->getBaseCurrencyCode();  // OBTENER SIGLAS DE LA MONEDA CONFIGURADA EN LA TIENDA
-		$currency_system = 'BOB';  // OBTENER SIGLAS DE LA MONEDA CONFIGURADA EN LA TIENDA
+		$currency_system = $this->_storeManager->getStore()->getBaseCurrencyCode();  // OBTENER SIGLAS DE LA MONEDA CONFIGURADA EN LA TIENDA
+		// $currency_system = 'BOB';  // OBTENER SIGLAS DE LA MONEDA CONFIGURADA EN LA TIENDA
 		$numeric_code_currency = array(
 		    'USD' => '840', //	Dolar estadounidense
 		    'BOB' => '068' //	BOLIVIANO
